@@ -30,7 +30,7 @@ J_Gz=np.random.uniform(-1,1,(N_G,N_z));
 
 tau=10;
 
-X0=0.1
+X0=0.1;
 
 <!---what is the total time?--->
 def g_GG_simul(N_G=N_G,dt=tau,T=3000):
@@ -38,7 +38,7 @@ def g_GG_simul(N_G=N_G,dt=tau,T=3000):
     xt[0]=x0;
     for i in range(1,T):
         for j in range(1,T):
-            xt[i]=xt[i-1]+(-xt[i-1]+g_GG*(J_GG*np.tanh(xt[i-1])))+g_Gz*J_Gz*z
+            xt[i]=xt[i-1]+(-xt[i-1]+g_GG*(J_GG*np.tanh(xt[i-1])))+g_Gz*J_Gz*z;
    <!---return xt,dt*np.linspace(0,r,r);--->
    
    <!---do we use both gf and gg networks? --->
