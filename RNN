@@ -1,5 +1,4 @@
-
-#unfinished: 1)S_b; 2)initial values for x, y, r; 3)order of execution.
+#unfinished: 1)initial values for x, y, r; 2)order of execution
 import numpy as np;
 
 
@@ -58,21 +57,16 @@ def g_GG_simul(N_G=N_G,dt=tau,T=3000):
                 
             for k in range(N_F):
                 #what is S_b
-                first_sigma_y=first_sigma_y+g_FF*J_FF[i][k]*S_b
+                first_sigma_y=first_sigma_y+g_FF*J_FF[i][k]*np.tanh(yt[k]);
            
         
         for q in range(N_G):
             for m in range(N_F):    
                 first_sigma_x=first_sigma_x+g_GG*J_GG[q][m]*r[m];
             for n in range(N_G):    
-                second_sigma_x=second_sigma_x+g_GF*J_GF[q][n]*np.tanh(yt);
+                second_sigma_x=second_sigma_x+g_GF*J_GF[q][n]*np.tanh(yt[n]);
         yt[t]=yt[t-1]+dt*(-yt[t-1]+1st_sigma_y+g_Gz*J_Gz*z+2nd_sigma_y);
         
         xt[t]=xt[t-1]+dt*(-xt[t-1]+1st_sigma_x+g_Gz*J_Gz*z+2nd_sigma_x);
         r[t] = np.tanh(x[t]);
         z=np.transpose(w)*r[t];
-
-
-
-
-
