@@ -1,72 +1,102 @@
-#unfinished: 1)initial values for x, y, r; 2)order of execution
 import numpy as np;
-
+import matplotlib.pyplot as plt
 
 g_GG=1.5;
 g_Gz=1;
 g_GF=0;
 g_FF=1.2;
-g_FG=1
+g_FG=1;
 
-N_G=1000;
-N_F=95;
+N_G=10;
+N_F=9;
 p_GG=0.1;
 p_Z=1;
 p_FG=0.025;
 p_FF=0.25;
-
-
+p_GF=0.25;
+T=3000;
 np.random.seed(1);
 
-#what is the dimension of w? then figure out z
 w=np.zeros(N_G);
-w_nonzero=np.random.normal(0,1/(p_Z*N_G),N_G);
+w_nonzero=np.random.normal(0,1/(p_Z*N_G),(N_G));
 for i in range(N_G):
-   w[i]=np.random.choice([0,w_nonzero[i]]);
+#    for j in range(N_G):
+
+        w[i]=np.random.choice([0,w_nonzero[i]]);
   # w[i]=w_nonzero[i];
    
 #random.shuffle(w);
 
 J_GG=np.random.normal(0,1/(p_Z*N_G),(N_G,N_G));
 J_Gz=np.random.uniform(-1,1,(N_G));
-J_FG=np.random.normal(0,1/(p_FG*N_G),(N_G,N_G));
-J_FF=np.random.normal(0,1/(p_FF*N_F),(N_G,N_G));
+J_FG=np.random.normal(0,1/(p_FG*N_G),(N_F,N_G));
+J_FF=np.random.normal(0,1/(p_FF*N_F),(N_F,N_F));
+J_GF=np.random.normal(0,1/(p_GF*N_F),(N_G,N_F));
 tau=10;
 
 x0=0.1
 
 #N_I=0, so the last term is omitted
-def g_GG_simul(N_G=N_G,dt=tau,T=3000):
-    yt=np.zeros(T);
+def g_GG_simul(N_G=N_G,N_F=N_F,dt=tau,T=3000):
+    yt=np.zeros((N_F));
 
-    xt=np.zeros(T);
-    r=np.zeros(T);
+    xt=np.zeros((N_G));
+    r=np.zeros(N_G);
+    z=np.zeros(T);
    # noise=sig*np.random.normal(0, 1, size=r)
-    xt[0]=x0;
-    for t in range(T):
+    #xt.append(x0)
+    #loop for z
+    for t in range(T):        
+
     #initialize sigmas in the two formula
         first_sigma_x=0;
         first_sigma_y=0;
         second_sigma_y=0;
         second_sigma_x=0;
+        # if t==0:
+        #     # yt.append(np.zeros(N_G));
+        
+        #     # xt.append(np.zeros(N_G))
+        #     # r.append(np.tanh(xt[t]));
+        #     z[t]=(np.dot(w.T,r));
+        if t>0:
+           #loop for xi and ri
+           for i in range(N_G):   
+               #loop for 1st sigma x
+               for j in range(N_G):
+                   first_sigma_x=first_sigma_x+g_GG*J_GG[i][j]*np.tanh(xt[j]);
+                   #loop for ya and 2nd sigma x
+                   for n in range(N_F):
+                       #loop for 2nd sigma y
+                       for m in range(N_G):
+                           second_sigma_y=second_sigma_y+g_FG*J_FG[n][m]*np.tan(xt[m]);
+                       #loop for 1st sigma y    
+                       for k in range(N_F):
+                           first_sigma_y=first_sigma_y+g_FF*J_FF[n][k]*np.tanh(yt[k]);
+                           
+                       yt[n]=yt[n]-yt[n]+first_sigma_y+second_sigma_y;
+                           
+                       second_sigma_x=second_sigma_x+g_GF*J_GF[n]*np.tanh(yt[n]);
+                       #xt[i]=xt[i]+(-xt[i]+first_sigma_x+second_sigma_x);
 
-
-        for i in range(N_F):
-            for j in range(N_G):
-                second_sigma_y=second_sigma_y+g_FG*J_FG[a][b]*r[b];
                 
-            for k in range(N_F):
-                #what is S_b
-                first_sigma_y=first_sigma_y+g_FF*J_FF[i][k]*np.tanh(yt[k]);
-           
+               xt[i]=xt[i]+(-xt[i]+first_sigma_x+g_Gz*J_Gz[i]*z[t-1]+second_sigma_x);
+               
+               r[i]=(np.tanh(xt[i]));
+            
+            # for l in range(1,N_F):
+                    
+            # for m in range(1,N_G):
+
+
+           # yt[t]=(yt[t-1]+(-yt[t-1]+first_sigma_y+g_Gz*J_Gz[t-1]*z[t-1]+second_sigma_y));
         
-        for q in range(N_G):
-            for m in range(N_F):    
-                first_sigma_x=first_sigma_x+g_GG*J_GG[q][m]*r[m];
-            for n in range(N_G):    
-                second_sigma_x=second_sigma_x+g_GF*J_GF[q][n]*np.tanh(yt[n]);
-        yt[t]=yt[t-1]+dt*(-yt[t-1]+1st_sigma_y+g_Gz*J_Gz*z+2nd_sigma_y);
-        
-        xt[t]=xt[t-1]+dt*(-xt[t-1]+1st_sigma_x+g_Gz*J_Gz*z+2nd_sigma_x);
-        r[t] = np.tanh(x[t]);
-        z=np.transpose(w)*r[t];
+          #  xt[t]=(xt[t-1]+(-xt[t-1]+first_sigma_x+g_Gz*J_Gz[t-1]*z[t-1]+second_sigma_x));
+        z[t]=(np.dot(w.T,r)); 
+
+    return z;
+
+z0=g_GG_simul();
+plt.plot(z0);
+
+
