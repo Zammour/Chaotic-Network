@@ -6,7 +6,7 @@ g_Gz=1;
 g_GF=0;
 g_FF=1.2;
 g_FG=1;
-
+alpha=1;
 N_G=10;
 N_F=9;
 p_GG=0.1;
@@ -17,34 +17,44 @@ p_GF=0.25;
 T=30;
 np.random.seed(1);
 
-w=np.zeros(N_G);
+w=np.zeros((T,N_G));
 w_nonzero=np.random.normal(0,1/(p_Z*N_G),(N_G));
 for i in range(N_G):
-#    for j in range(N_G):
+     w[0][i]=np.random.choice([0,w_nonzero[i]]);
 
-        w[i]=np.random.choice([0,w_nonzero[i]]);
-  # w[i]=w_nonzero[i];
-   
-#random.shuffle(w);
 
 J_GG=np.random.normal(0,1/(p_Z*N_G),(N_G,N_G));
 J_Gz=np.random.uniform(-1,1,(N_G));
 J_FG=np.random.normal(0,1/(p_FG*N_G),(N_F,N_G));
 J_FF=np.random.normal(0,1/(p_FF*N_F),(N_F,N_F));
 J_GF=np.random.normal(0,1/(p_GF*N_F),(N_G,N_F));
-tau=10;
+tau=1;
 
-x0=0.1
+#x0=0.1
+
+nsecs=T
+
+simtime = np.arange(0, nsecs, tau)
+simtime_len = len(simtime)
+simtime2 = np.arange(1*nsecs, 2*nsecs, tau)
+
+amp = 1.3;
+freq = 1/60;
+ft = (amp/1.0)*np.sin(1.0*np.pi*freq*simtime) + (amp/2.0)*np.sin(2.0*np.pi*freq*simtime) + (amp/6.0)*np.sin(3.0*np.pi*freq*simtime) + (amp/3.0)*np.sin(4.0*np.pi*freq*simtime);
+ft = ft/1.5;
 
 #N_I=0, so the last term is omitted
-def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T):
+def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T,ft=ft):
     yt=np.ones(N_F);
 
     xt=np.ones(N_G);
     r=np.ones(N_G);
-    z=np.ones(T);
-   # noise=sig*np.random.normal(0, 1, size=r)
-    #xt.append(x0)
+    z=np.zeros(T);
+    #P=np.ones(T);
+    P=np.zeros((T,N_G,N_G));
+    P[0]=np.divide(np.identity(N_G),alpha);
+    e_min=np.zeros(T);
+    
     #loop for z
     for t in range(T):        
 
@@ -53,15 +63,16 @@ def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T):
         first_sigma_y=1;
         second_sigma_y=1;
         second_sigma_x=1;
-
+        # if t==0:
+        #     e_min[t]=
         if t>0:
            #loop for xi and ri
-           for i in range(N_G):   
+           for i in range(1,N_G):   
                #loop for 1st sigma x
-               for j in range(N_G):
+               for j in range(1,N_G):
                    first_sigma_x=first_sigma_x+g_GG*J_GG[i][j]*np.tanh(xt[j]);
                    #loop for ya and 2nd sigma x
-                   for n in range(N_F):
+                   for n in range(1,N_F):
                        #loop for 2nd sigma y
                        for m in range(N_G):
                            second_sigma_y=second_sigma_y+g_FG*J_FG[n][m]*np.tan(xt[m]);
@@ -69,19 +80,17 @@ def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T):
                        for k in range(N_F):
                            first_sigma_y=first_sigma_y+g_FF*J_FF[n][k]*np.tanh(yt[k]);
                            
-                       yt[n]=yt[n]+(-yt[n]+first_sigma_y+second_sigma_y)/tau;
+                       yt[n]=yt[n-1]+(-yt[n-1]+first_sigma_y+second_sigma_y)/tau;
 
                        second_sigma_x=second_sigma_x+np.dot(g_GF*J_GF[i][n],np.tanh(yt[n]));
-  
 
-
-
-               xt[i]=xt[i]+(-xt[i]+first_sigma_x+g_Gz*J_Gz[i]*z[t-1]+second_sigma_x)/tau;
+               xt[i]=xt[i-1]+(-xt[i-1]+first_sigma_x+g_Gz*J_Gz[i-1]*z[t-1]+second_sigma_x)/tau;
                
                r[i]=(np.tanh(xt[i]));
-            
-
-        z[t]=(np.dot(w.T,r)); 
+        e_min[t]=np.dot(w[t-1].T,r)-ft[t]  
+        P[t]=P[t-1]-(np.dot(np.dot(np.dot(P[t-1],r), r.T), P[t-1]))/(1+np.dot(np.dot(r.T,P[t-1]),r))      
+        w[t]=w[t-1]-np.dot(e_min[t],np.dot(P[t],r))
+        z[t]=(np.dot(w[t].T,r)); 
 
     return z;
 
