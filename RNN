@@ -1,3 +1,5 @@
+
+#unfinished: not sure if there is learning: e_min is not decreasing
 import numpy as np;
 import matplotlib.pyplot as plt;
 
@@ -8,13 +10,13 @@ g_FF=1.2;
 g_FG=1;
 alpha=1;
 N_G=10;
-N_F=9;
+N_F=2;
 p_GG=0.1;
 p_Z=1;
 p_FG=0.025;
 p_FF=0.25;
 p_GF=0.25;
-T=30;
+T=1500;
 np.random.seed(1);
 
 P=np.zeros((T,N_G,N_G));
@@ -34,6 +36,7 @@ tau=1;
 
 #x0=0.1
 
+#periodic function D
 nsecs=T
 
 simtime = np.arange(0, nsecs, tau)
@@ -45,51 +48,115 @@ freq = 1/60;
 ft = (amp/1.0)*np.sin(1.0*np.pi*freq*simtime) + (amp/2.0)*np.sin(2.0*np.pi*freq*simtime) + (amp/6.0)*np.sin(3.0*np.pi*freq*simtime) + (amp/3.0)*np.sin(4.0*np.pi*freq*simtime);
 ft = ft/1.5;
 
-#N_I=0, so the last term is omitted
-def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T,ft=ft,P=P,w=w):
-    yt=np.ones(N_F);
 
+
+
+def first_sigma_x(d1=0):
+    first_sigma_x=1;
+    xt=np.ones(N_G);
+
+
+    for i in range(N_G):
+
+            first_sigma_x=first_sigma_x+g_GG*J_GG[d1-1][i]*np.tanh(xt[i]);
+    return first_sigma_x;
+
+def first_sigma_y(d1=0):
+    first_sigma_y=1;
+    yt=np.ones(N_F);
+    for  i in range(1,N_F):
+            first_sigma_y=first_sigma_y+g_FF*J_FF[d1-1][i]*np.tanh(yt[i-1]);
+    return first_sigma_y;
+
+
+def second_sigma_y(d1=0):
+    second_sigma_y=1;
+    xt=np.ones(N_G);
+    for i in range(1,N_G):
+        second_sigma_y=second_sigma_y+g_FG*J_FG[d1-1][i]*np.tan(xt[i]);
+    return second_sigma_y ;
+
+def ya(tau=tau):
+    yt=np.ones(N_F);
+    for i in range(1,N_F):
+        yt[i]=yt[i-1]+(-yt[i-1]+first_sigma_y(i-1)+second_sigma_y(i-1))/tau;
+    return yt;
+
+def second_sigma_x(d1=0):
+    yt=ya();
+    second_sigma_x=1;
+    for i in range(1,N_F):
+
+        second_sigma_x=second_sigma_x+np.dot(np.dot(g_GF,J_GF[d1-1][i]),np.tanh(yt[i-1]));
+        
+    return second_sigma_x;
+
+def xi(t=0,tau=tau):
     xt=np.ones(N_G);
     r=np.ones(N_G);
     z=np.zeros(T);
+
+    for i in range(1,N_G):
+        xt[i]=xt[i-1]+(-xt[i-1]+first_sigma_x(i)+g_Gz*J_Gz[i-1]*z[t-1]+second_sigma_x(i))/tau;
+        r[i]=(np.tanh(xt[i]));
+    return r;   
+
+#N_I=0, so the last term is omitted
+def g_GG_simul(N_G=N_G,N_F=N_F,tau=tau,T=T,ft=ft,P=P,w=w):
+    # yt=np.ones(N_F);
+
+    # xt=np.ones(N_G);
+    # r=np.ones(N_G);
+    z=np.zeros(T);
     #P=np.ones(T);
     e_min=np.zeros(T);
-
+  #  e_min[0]=alpha*(f[1]-f[0])
     #loop for z
     for t in range(1,T):        
 
+        
+    #same thing as those fxns for sigma, y, and x
     #initialize sigmas in the two formula
-        first_sigma_x=1;
-        first_sigma_y=1;
-        second_sigma_y=1;
-        second_sigma_x=1;
-
-        if t>0:
-           #loop for xi and ri
-           for i in range(1,N_G):   
-               #loop for 1st sigma x
-               for j in range(1,N_G):
-                   first_sigma_x=first_sigma_x+g_GG*J_GG[i][j]*np.tanh(xt[j]);
-                   #loop for ya and 2nd sigma x
-                   for n in range(1,N_F):
-                       #loop for 2nd sigma y
-                       for m in range(N_G):
-                           second_sigma_y=second_sigma_y+g_FG*J_FG[n][m]*np.tan(xt[m]);
-                       #loop for 1st sigma y    
-                       for k in range(N_F):
-                           first_sigma_y=first_sigma_y+g_FF*J_FF[n][k]*np.tanh(yt[k]);
+        # first_sigma_x=1;
+        # first_sigma_y=1;
+        # second_sigma_y=1;
+        # second_sigma_x=1;
+        
+        # if t>0:
+           # #loop for xi and ri
+           # for i in range(1,N_G):   
+           #     #loop for 1st sigma x
+           #     for j in range(N_G):
+           #         first_sigma_x=first_sigma_x+g_GG*J_GG[i-1][j]*np.tanh(xt[j]);
+           #         #loop for ya and 2nd sigma x
+           #         for n in range(N_F):
+           #             #loop for 2nd sigma y
+           #             for m in range(N_G):
+           #                 second_sigma_y=second_sigma_y+g_FG*J_FG[n][m]*np.tan(xt[m]);
+           #             #loop for 1st sigma y    
+           #             for k in range(N_F):
+           #                 first_sigma_y=first_sigma_y+g_FF*J_FF[n][k]*np.tanh(yt[k]);
                            
-                       yt[n]=yt[n-1]+(-yt[n-1]+first_sigma_y+second_sigma_y)/tau;
+           #             yt[n]=yt[n-1]+(-yt[n-1]+first_sigma_y+second_sigma_y)/tau;
 
-                       second_sigma_x=second_sigma_x+np.dot(g_GF*J_GF[i][n],np.tanh(yt[n]));
+           #             second_sigma_x=second_sigma_x+np.dot(g_GF*J_GF[i-1][n],np.tanh(yt[n]));
 
-               xt[i]=xt[i-1]+(-xt[i-1]+first_sigma_x+g_Gz*J_Gz[i-1]*z[t-1]+second_sigma_x)/tau;
+           #     xt[i]=xt[i-1]+(-xt[i-1]+first_sigma_x+g_Gz*J_Gz[i-1]*z[t-1]+second_sigma_x)/tau;
                
-               r[i]=(np.tanh(xt[i]));
-        e_min[t]=(np.dot(w[t-1].T,r)-ft[t]);  
-        P[t]=P[t-1]-(np.dot(np.dot(np.dot(P[t-1],r), r.T), P[t-1]))/(1+np.dot(np.dot(r.T,P[t-1]),r)) ;     
-        w[t]=w[t-1]-np.dot(e_min[t],np.dot(P[t],r));
-        z[t]=(np.dot(w[t].T,r)); 
+               #r[i]=(np.tanh(xt[i]));
+        r=xi(t=t); 
+        #update weights every 2 steps
+        if t%2==0:
+            e_min[t]=np.subtract(np.dot(w[t-1].T,r),ft[t]);  
+            P[t]=np.subtract(P[t-1],np.divide(np.dot(np.dot(np.dot(P[t-1],r), r.T), P[t-1]),np.add(1,np.dot(np.dot(r.T,P[t-1]),r)))) ;     
+
+            w[t]=np.subtract(w[t-1],np.dot(e_min[t],np.dot(P[t],r)));
+
+        else:
+            e_min[t]=e_min[t-1];
+            P[t]=P[t-1];
+            w[t]=w[t-1];
+        z[t]=np.dot(w[t].T,r); 
 
     return z;
 
