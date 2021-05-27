@@ -285,7 +285,8 @@ for t in simtime:				# don't want to subtract time in indices
     
     zpt.T[ti] = z;
     #ypt.T[ti] = y;
-    
+    wo_len[0,ti] = np.sqrt(np.dot(wo.T, wo));	
+
     neurons_test = np.append(neurons_test, np.array(rz[pick_random_neurons]), axis = 1)
     
     ti += 1;    
