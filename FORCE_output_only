@@ -5,63 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 from scipy import stats
-#from functions import triangle, sinusoid
+from functions import triangle, sinusoid
 
-
-
-def triangle(time, amplitude, freq, noise = False, noise_intensity = 0.1):
-    
-    freq /= 2
-        
-    y = 4*freq*(time - np.floor(2*time*freq+0.5)/2/freq)*(-1)**(np.floor(2*time*freq+0.5))
-    
-    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
-
-    return y
-
-
-def square(time, amplitude, freq, noise = False, noise_intensity = 0.1):
-    
-    y = amplitude*np.sign(np.sin(freq*time))
-    
-    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
-    
-    return y
-    
-
-
-def sinusoid(time, amplitudes, freqs, noise = False, noise_intensity = 0.1):
-    
-    y = np.zeros(len(time))
-    
-    for n in range(len(amplitudes)):
-        
-        y += amplitudes[n]*np.sin(freqs[n]*np.pi*time)
-        
-    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
-        
-    return y
-
-
-def lorenz_attractor(time, x_0, y_0, z_0, Prandtl_number = 10, Rayleigh_number = 28, beta = 8/3):
-    
-    dt = time[1] - time[0]
-    
-    x = [x_0]
-    y = [y_0]
-    z = [z_0]
-    
-    for t in range(len(time)):
-        
-        xp = (Prandtl_number * (y[t] - x[t])) * dt
-        yp = (Rayleigh_number * x[t] - y[t] - x[t] * z[t]) * dt
-        zp = (x[t] * y[t] - beta * z[t]) * dt
-        
-        x.append(x[-1] + xp)
-        y.append(y[-1] + yp)
-        z.append(z[-1] + zp)
-        
-    return x, y, z 
 
 linewidth = 3;
 fontsize = 14;
@@ -359,7 +304,7 @@ print('Testing MAE: ' + str(error_avg))
 
 
 
---------------------CODE BELOW NOT WORKING----------------------------
+--------------------OLD CODE BELOW NOT WORKING----------------------------
 ---------------------------------------------------------------------
 #unfinished: not sure if there is learning: e_min is not decreasing
 import numpy as np;
