@@ -227,6 +227,8 @@ error_avg_pre = np.sum(np.abs(zpre-ft2))/simtime_len
 print('Pre-training MAE: ' + str(error_avg_pre))
 
 
+
+#FORCE learning
 ti=0;
 for t in simtime:
     
