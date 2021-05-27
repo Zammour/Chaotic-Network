@@ -21,41 +21,162 @@ Created on Fri May 21 16:06:43 2021
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.sparse as sparse
-from scipy import stats
+import pandas as pd
 
 
 
+def create_network(number_of_neurons = 1000, chaotic_factor = 1.5, inverse_learning_rate = 1, fraction_non_null_weight = 1):
+    
+    scale = 1/np.sqrt(number_of_neurons * fraction_non_null_weight)
+    
+    network = pd.Series({
+        
+        'x' : 0.5*np.random.randn(number_of_neurons,1),
+        'z' : 0.5*np.random.randn(1,1),
+        'M' : np.asmatrix(np.random.randn(number_of_neurons,number_of_neurons)*chaotic_factor*scale),
+        'alpha' : inverse_learning_rate,
+        'wo' : np.zeros((number_of_neurons, 1))
+        })
+    
+    network = network.append(pd.Series({'r' : np.tanh(network.x)}))
+
+    return network
+
+
+def train(network, time, dt, learn_every, ft, plot_training = True):
+    
+    P = (1.0/network.alpha)*np.identity(len(network.x))
+    ti = 0
+    zt = np.zeros((1,len(time)))
+    network = network.append(pd.Series({'history_z' : np.zeros((1, len(time))), 'history_w' : np.zeros((1, len(time)))}))
+    
+
+    for t in simtime:
+        
+      
+        if plot_training:
+                
+            if ti % (nsecs/2) == 0:
+                plt.subplot(211)
+                plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
+                plt.plot(simtime, network.history_z.T, linewidth =  linewidth, color = 'red');
+                plt.title('training', fontsize = fontsize, fontweight = fontweight);
+                plt.legend(['f', 'z']);    
+                plt.xlabel('time', fontsize = fontsize, fontweight = fontweight);
+                plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
+                
+                plt.subplot(212)
+                plt.plot(simtime, network.history_w.T, linewidth = linewidth);
+                plt.xlabel('time', fontsize = fontsize, fontweight = fontweight);
+                plt.ylabel('|w|', fontsize = fontsize, fontweight = fontweight);
+                plt.legend(['|w|']);
+                plt.pause(0.5);    
+                
+                if ti + nsecs/2 < len(simtime):
+                    plt.clf()
+        
+        
+        # sim, so x(t) and r(t) are created.
+        network.x = (1.0-dt)*network.x + network.M*(network.r*dt);
+        network.r = np.tanh(network.x);
+        network.z = network.wo.T * network.r;
+        
+        if ti % learn_every == 0:
+            # update inverse correlation matrix
+            k = P*network.r;
+            rPr = network.r.T*k;
+            c = 1.0/(1.0 + rPr);
+            P = P - k*(k*c).T;
+            
+            # update the error for the linear readout
+            e = network.z-ft[ti];
+            
+            # update the output weights
+            dw = -float(e)*k*c;
+            network.wo = network.wo + dw
+            
+            # update the internal weight matrix using the output's error
+            network.M += dw.T
+            
+        
+        # Store the output of the system.
+        network.history_z[0, ti] = network.z
+        network.history_w[0, ti] = np.sqrt(network.wo.T*network.wo)
+        ti = ti+1
+        
+    
+    error_avg = np.sum(np.abs(zt-ft))/simtime_len;
+    print('Training MAE: ' +  str(error_avg))    
+    
+    return network
+
+
+
+
+def test(network, time, ft, plot_test = True):
+    
+    # Now test.
+    ti = 0;
+    for t in time:                # don't want to subtract time in indices 
+        
+        # sim, so x(t) and r(t) are created.
+        network.x = (1.0-dt)*network.x + network.M*(network.r*dt);
+        network.r = np.tanh(network.x);
+        network.z = network.wo.T*network.r;
+    
+        zpt[0, ti] = network.z;
+    
+        ti = ti+1;    
+    
+    error_avg = np.sum(np.abs(zpt-ft))/len(time);
+    print('Testing MAE: ' + str(error_avg));
+    
+    if plot_test:
+        
+        """
+        plt.figure();
+        plt.subplot(211);
+        plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
+        plt.plot(simtime, zt.T, linewidth = linewidth, color =  'red');
+        plt.title('training', fontsize = fontsize, fontweight = fontweight);
+        plt.xlabel('time', fontsize = fontsize, fontweight =fontweight);
+        plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
+        plt.legend(['f', 'z']);
+        """
+        
+        plt.figure()
+        plt.subplot(211)
+        plt.plot(time, ft.T, linewidth = linewidth, color = 'green'); 
+        plt.axis('tight')
+        plt.plot(time, zpt.T, linewidth = linewidth, color = 'red');
+        plt.axis('tight')
+        plt.title('simulation', fontsize = fontsize, fontweight = fontweight);
+        plt.xlabel('time', fontsize =fontsize, fontweight = fontweight);
+        plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
+        plt.legend(['f', 'z']);
+        
+        
 linewidth = 3;
 fontsize = 14;
 fontweight = 'bold';
 
 N = 1000;
-p = 1.0;
-g = 1.5;				# g greater than 1 leads to chaotic networks.
+p = 1;
+g = 1.5;                # g greater than 1 leads to chaotic networks.
 alpha = 1.0e-0;
 nsecs = 1440;
 dt = 0.1;
 learn_every = 2;
 
 scale = 1.0/np.sqrt(p*N);
-rvs = stats.norm().rvs
-M = sparse.random(N,N,p, data_rvs = rvs).todense()*g*scale
+M = np.asmatrix(np.random.randn(N,N)*g*scale)
 
 
 nRec2Out = N;
 wo = np.zeros((nRec2Out,1))
 dw = np.zeros((nRec2Out,1))
+zero_weights = np.random.uniform(0, 1, wo.shape) < p
 
-"""
-disp(['   N: ', num2str(N)]);
-disp(['   g: ', num2str(g)]);
-disp(['   p: ', num2str(p)]);
-disp(['   nRec2Out: ', num2str(nRec2Out)]);
-disp(['   alpha: ', num2str(alpha,3)]);
-disp(['   nsecs: ', num2str(nsecs)]);
-disp(['   learn_every: ', num2str(learn_every)]);
-"""
 
 simtime = np.arange(0, nsecs, dt)
 simtime_len = len(simtime)
@@ -87,96 +208,11 @@ plt.figure()
 ti = 0
 P = (1.0/alpha)*np.identity(nRec2Out)
 
-for t in simtime:
-    
-    if ti % (nsecs/2) == 0:
-    	plt.subplot(211)
-    	plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
-    	plt.plot(simtime, zt.T, linewidth =  linewidth, color = 'red');
-    	plt.title('training', fontsize = fontsize, fontweight = fontweight);
-    	plt.legend(['f', 'z']);	
-    	plt.xlabel('time', fontsize = fontsize, fontweight = fontweight);
-    	plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
-    	
-    	plt.subplot(212)
-    	plt.plot(simtime, wo_len.T, linewidth = linewidth);
-    	plt.xlabel('time', fontsize = fontsize, fontweight = fontweight);
-    	plt.ylabel('|w|', fontsize = fontsize, fontweight = fontweight);
-    	plt.legend(['|w|']);
-    	plt.pause(0.5);	
-        
-    	if ti + nsecs/2 < len(simtime):
-            plt.clf()
-        
-    
-    # sim, so x(t) and r(t) are created.
-    x = (1.0-dt)*x + M*(r*dt);
-    r = np.tanh(x);
-    z = wo.T*r;
-    
-    if ti % learn_every == 0:
-    	# update inverse correlation matrix
-    	k = P*r;
-    	rPr = r.T*k;
-    	c = 1.0/(1.0 + rPr);
-    	P = P - k*(k*c).T;
-    	
-    	# update the error for the linear readout
-    	e = z-ft[ti];
-    	
-    	# update the output weights
-    	dw = -float(e)*k*c;
-    	wo = wo + dw;
-    	
-    	# update the internal weight matrix using the output's error
-    	M += dw.T
-        
 
-    # Store the output of the system.
-    zt[0, ti] = z
-    wo_len[0, ti] = np.sqrt(wo.T*wo)
-    ti = ti+1
-    
-
-error_avg = np.sum(np.abs(zt-ft))/simtime_len;
-print('Training MAE: ' +  str(error_avg))
-print('Now testing... please wait.');    
-
-# Now test. 
-ti = 0;
-for t in simtime:				# don't want to subtract time in indices 
-    
-    # sim, so x(t) and r(t) are created.
-    x = (1.0-dt)*x + M*(r*dt);
-    r = np.tanh(x);
-    z = wo.T*r;
-
-    zpt[0, ti] = z;
-
-    ti = ti+1;    
-
-error_avg = sum(abs(zpt-ft2))/simtime_len;
-print(['Testing MAE: ' + str(error_avg)]);
+net = create_network()
+train_net = train(net, simtime, dt, learn_every, ft)
+test(train_net, simtime, ft)
 
 
-plt.figure();
-plt.subplot(211);
-plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
-plt.plot(simtime, zt.T, linewidth = linewidth, color =  'red');
-plt.title('training', fontsize = fontsize, fontweight = fontweight);
-plt.xlabel('time', fontsize = fontsize, fontweight =fontweight);
-plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
-plt.legend(['f', 'z']);
 
-
-plt.subplot(212)
-plt.plot(simtime2, ft2.T, linewidth = linewidth, color = 'green'); 
-plt.axis('tight')
-plt.plot(simtime2, zpt.T, linewidth = linewidth, color = 'red');
-plt.axis('tight')
-plt.title('simulation', fontsize = fontsize, fontweight = fontweight);
-plt.xlabel('time', fontsize =fontsize, fontweight = fontweight);
-plt.ylabel('f and z', fontsize = fontsize, fontweight = fontweight);
-plt.legend(['f', 'z']);
-	
 
