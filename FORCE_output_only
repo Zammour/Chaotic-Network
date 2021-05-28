@@ -1,11 +1,66 @@
 
---------------PRE-, TRAINING, TESTING--------------------
-
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 from scipy import stats
-from functions import triangle, sinusoid
+#from functions import triangle, sinusoid
+
+
+
+def triangle(time, amplitude, freq, noise = False, noise_intensity = 0.1):
+    
+    freq /= 2
+        
+    y = 4*freq*(time - np.floor(2*time*freq+0.5)/2/freq)*(-1)**(np.floor(2*time*freq+0.5))
+    
+    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
+
+    return y
+
+
+def square(time, amplitude, freq, noise = False, noise_intensity = 0.1):
+    
+    y = amplitude*np.sign(np.sin(freq*time))
+    
+    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
+    
+    return y
+    
+
+
+def sinusoid(time, amplitudes, freqs, noise = False, noise_intensity = 0.1):
+    
+    y = np.zeros(len(time))
+    
+    for n in range(len(amplitudes)):
+        
+        y += amplitudes[n]*np.sin(freqs[n]*np.pi*time)
+        
+    if noise: y+= np.random.uniform(-noise_intensity, noise_intensity, size = y.shape)
+        
+    return y
+
+
+def lorenz_attractor(time, x_0, y_0, z_0, Prandtl_number = 10, Rayleigh_number = 28, beta = 8/3):
+    
+    dt = time[1] - time[0]
+    
+    x = [x_0]
+    y = [y_0]
+    z = [z_0]
+    
+    for t in range(len(time)):
+        
+        xp = (Prandtl_number * (y[t] - x[t])) * dt
+        yp = (Rayleigh_number * x[t] - y[t] - x[t] * z[t]) * dt
+        zp = (x[t] * y[t] - beta * z[t]) * dt
+        
+        x.append(x[-1] + xp)
+        y.append(y[-1] + yp)
+        z.append(z[-1] + zp)
+        
+    return x, y, z 
 
 linewidth = 3;
 fontsize = 14;
@@ -28,14 +83,7 @@ J_Gz=np.random.uniform(-1,1,(N,1));
 nRec2Out = int(N)
 neurons_recorded = 10
 
-"""
-% Allow output and control units to start with different ICs.  If you set beta greater than zero, then y will look
-% different than z but still drive the network with the appropriate frequency content (because it will be driven with
-% z).  A value of beta = 0 shows that the learning rules produce extremely similar signals for both z(t) and y(t),
-% despite having no common pre-synaptic inputs.  Keep in mind that the vector norm of the output weights is 0.1-0.2 when
-% finished, so if you make beta too big, things will eventually go crazy and learning won't converge.
-%beta = 0.1;	
-"""
+
 
 beta =0.5
 wo = beta*np.random.randn(nRec2Out,1)/np.sqrt(N)		# synaptic strengths from internal pool to output unit
@@ -64,11 +112,11 @@ ft = ft/1.5;
 ft2 = (amp/1.0)*np.sin(1.0*np.pi*freq*simtime2) + (amp/2.0)*np.sin(2.0*np.pi*freq*simtime2) + (amp/6.0)*np.sin(3.0*np.pi*freq*simtime2) + (amp/3.0)*np.sin(4.0*np.pi*freq*simtime2);
 ft2 = ft2/1.5;
 
-ft = triangle(simtime, amp, freq)
+#ft = triangle(simtime, amp, freq)
+ft=y_figE;
+
 
 wo_pre_len = np.zeros((1,simtime_len))  
-wo_train_len = np.zeros((1,simtime_len))  
-wo_post_len = np.zeros((1,simtime_len))  
 
 zt = np.zeros((1,simtime_len))
 zpre=np.zeros((1,simtime_len));
@@ -77,12 +125,10 @@ zpt = np.zeros((1,simtime_len))
 
 x0 = 0.5*np.random.randn(N,1);
 z0 = 0.5*np.random.randn(1,1);
-y0 = 0.5*np.random.randn(1,1);
 
 x = x0; 
 r = np.tanh(x);
 z = z0; 
-y = y0;
 
 plt.figure()
 ti = 0;
@@ -90,7 +136,8 @@ Pz = (1.0/alpha)*np.identity(nRec2Out);
 
 
 
-# keep track of random sample neurons
+pick_random_neurons = np.random.randint(0, N/2, size = neurons_recorded)
+
 randomlist = random.sample(range(0, N), 10)
 
 #pre-training
@@ -110,22 +157,22 @@ n900_pre = np.array([])
 for t in simtime:				# don't want to subtract time in indices
 
     if ti%(nsecs/2) == 0:
-    	print('time: ' + str(t) +'.');
+    	print('time(s): ' + str(t) +'.');
       #  plt.figure('fig.training');
 
     	plt.subplot(211);
     	plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
     	plt.plot(simtime, zpre.T, linewidth = linewidth, color = 'red');
-    	plt.title('pre-train', fontsize = fontsize, fontweight = fontweight);
-    	plt.xlabel('time (ms)', fontsize = fontsize, fontweight = fontweight);
+    	plt.title('Pre-train', fontsize = fontsize, fontweight = fontweight);
+    	plt.xlabel('time (s)', fontsize = fontsize, fontweight = fontweight);
     	plt.ylabel('f, z', fontsize = fontsize, fontweight = fontweight);
     	plt.legend(['f', 'z']);
     	
     	plt.subplot(212);
     	plt.plot(simtime, wo_pre_len.T, linewidth = linewidth); 
-    	plt.xlabel('time (ms)', fontsize = fontsize, fontweight = fontweight);
-    	plt.ylabel('|w_o|', fontsize = fontsize, fontweight = fontweight);
-    	plt.legend(['|w_o|']);	
+    	plt.xlabel('time (s)', fontsize = fontsize, fontweight = fontweight);
+    	plt.ylabel('|wo|', fontsize = fontsize, fontweight = fontweight);
+    	plt.legend(['|wo|']);	
                
     	plt.pause(0.5);	
     
@@ -155,27 +202,27 @@ error_avg_pre = np.sum(np.abs(zpre-ft2))/simtime_len
 print('Pre-training MAE: ' + str(error_avg_pre))
 
 
-#FORCE Learning
+
 neurons = np.zeros((neurons_recorded,1))
 
 ti=0;
+wo_train_len = np.zeros((1,simtime_len));  
+
 for t in simtime:
-    
+
     if ti%(nsecs/2) == 0:
-    	print('time: ' + str(t) +'.');
+    	print('time(s): ' + str(t) +'.');
     	plt.subplot(211);
     	plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
     	plt.plot(simtime, zt.T, linewidth = linewidth, color = 'red');
-    	#plt.plot(simtime, yt.T, linewidth = linewidth, color = 'magenta'); 
-    	plt.title('training', fontsize = fontsize, fontweight = fontweight);
-    	plt.xlabel('time (ms)', fontsize = fontsize, fontweight = fontweight);
+    	plt.title('Training', fontsize = fontsize, fontweight = fontweight);
+    	plt.xlabel('time (s)', fontsize = fontsize, fontweight = fontweight);
     	plt.ylabel('f, z', fontsize = fontsize, fontweight = fontweight);
     	plt.legend(['f', 'z']);
     	
     	plt.subplot(212);
-    	plt.plot(simtime, wo_train_len.T, linewidth = linewidth); 
-    	#plt.plot(simtime, wc_len.T, linewidth = linewidth, color = 'green'); 
-    	plt.xlabel('time (ms)', fontsize = fontsize, fontweight = fontweight);
+    	plt.plot(simtime, wo_train_len[-1].T, linewidth = linewidth); 
+    	plt.xlabel('time(s)', fontsize = fontsize, fontweight = fontweight);
     	plt.ylabel('|wo|', fontsize = fontsize, fontweight = fontweight);
     	plt.legend(['|wo|'])
     	plt.pause(0.5)
@@ -193,21 +240,24 @@ for t in simtime:
     	kz = np.dot(Pz,r);
     	rPrz = np.dot(r.T,kz);
     	cz = np.divide(1.0,np.add(1.0, rPrz));
-    	Pz = Pz - np.dot(kz,np.dot(kz,cz).T);    
+    	Pz = np.subtract(Pz, np.dot(kz,np.dot(kz,cz).T));    
     	# update the error for the linear readout
     	e = np.subtract(z,ft[ti]);
     	# update the output weights
     	dwo = np.dot(np.dot(-float(e),kz),cz);
     	wo += dwo;
 
-    
+
     # Store the output of the system.
     zt[0,ti] = z;
     wo_train_len[0,ti] = np.sqrt(np.dot(wo.T, wo));	
-    
-    neurons = np.append(neurons, np.array(r[randomlist]), axis = 1)
-    
+        
     ti += 1;	
+
+
+    neurons = np.append(neurons,np.array(r[randomlist]), axis = 1)
+
+    
         
 
 error_avg = np.sum(np.abs(zt-ft))/simtime_len;
@@ -216,23 +266,24 @@ print('Now testing... please wait.');
 
 # Now test. 
 ti = 0;
+wo_post_len = np.zeros((1,simtime_len))  
 
 neurons_test = np.zeros((neurons_recorded,1))
 
 for t in simtime:				# don't want to subtract time in indices
     if ti%(nsecs/2) == 0:
-    	 print('time: ' + str(t) +'.');
+    	 print('time(s): ' + str(t) +'.');
     	 plt.subplot(211);
     	 plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
     	 plt.plot(simtime, zpt.T, linewidth = linewidth, color = 'red');
     	 plt.title('Test', fontsize = fontsize, fontweight = fontweight);
-    	 plt.xlabel('time (ms)', fontsize = fontsize, fontweight = fontweight);
+    	 plt.xlabel('time(s)', fontsize = fontsize, fontweight = fontweight);
     	 plt.ylabel('f, z', fontsize = fontsize, fontweight = fontweight);
     	 plt.legend(['f', 'z']);
     	
     	 plt.subplot(212);
     	 plt.plot(simtime, wo_post_len.T, linewidth = linewidth); 
-    	 plt.xlabel('time(ms)', fontsize = fontsize, fontweight = fontweight);
+    	 plt.xlabel('time(s)', fontsize = fontsize, fontweight = fontweight);
     	 plt.ylabel('|wo|', fontsize = fontsize, fontweight = fontweight);
     	 plt.legend(['|wo|']);	
     
@@ -254,7 +305,7 @@ for t in simtime:				# don't want to subtract time in indices
 error_avg = np.sum(np.abs(zpt-ft2))/simtime_len
 print('Testing MAE: ' + str(error_avg))
 
-##fig 2a,b,c
+
 plt.figure()
 plt.subplot(211)
 plt.plot(simtime, ft.T, linewidth = linewidth, color = 'green');
@@ -298,11 +349,9 @@ def plot_activity(time, z, dw, neurons, title = None):
     
     
     
-    
 plot_activity(simtime, zpre.T,abs(np.diff(wo_pre_len).T), neurons_pre[:, 1:], title = 'Pre_learning')
 plot_activity(simtime, zt.T, abs(np.diff(wo_train_len).T), neurons[:, 1:], title = 'Learning')
 plot_activity(simtime, zpt.T, abs(np.diff(wo_post_len).T), neurons_test[:, 1:], title = 'Post_learning')
-
 
 
 
