@@ -298,9 +298,10 @@ def plot_activity(time, z, dw, neurons, title = None):
     
     
     
-plot_activity(simtime, zpre.T, np.diff(wo_pre_len).T, neurons_pre[:, 1:], title = 'Pre_learning')
-plot_activity(simtime, zt.T, np.diff(wo_train_len).T, neurons[:, 1:], title = 'Learning')
-plot_activity(simtime, zpt.T, np.diff(wo_post_len).T, neurons_test[:, 1:], title = 'Post_learning')
+    
+plot_activity(simtime, zpre.T,abs(np.diff(wo_pre_len).T), neurons_pre[:, 1:], title = 'Pre_learning')
+plot_activity(simtime, zt.T, abs(np.diff(wo_train_len).T), neurons[:, 1:], title = 'Learning')
+plot_activity(simtime, zpt.T, abs(np.diff(wo_post_len).T), neurons_test[:, 1:], title = 'Post_learning')
 
 
 
