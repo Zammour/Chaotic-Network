@@ -281,6 +281,7 @@ def plot_activity(network, time, title = None):
 nsecs = 1440;
 dt = 0.1;
 simtime = np.arange(0, nsecs, dt)
+simtime2 = np.arange(nsecs+10, 2*nsecs+10, dt)
 amp = 1.3;
 freq = 1/60;
 
@@ -304,43 +305,43 @@ amp_figD = [1, 0.5, 1/6, 1/3]
 freq_figD = np.array([1, 2, 3, 4])/60
 y_figD = sinusoid(simtime, amp_figD, freq_figD)
 network_trained = train(network, simtime, 3, y_figD, plot_training=False)
-network_tested = test(network_trained, simtime, y_figD, title = 'D - Periodic')
+network_tested = test(network_trained, simtime2, y_figD, title = 'D - Periodic')
 
 
 amp_figE = np.array([1, 1/4, 1/3, 1/3, 1/5, 1/10, 1/10, 1/12, 1/3, 1/2, 1/6, 1/2, -1/5, 1/4, 1/4, 1/10])/2
 freq_figE = np.arange(1,17)/180
 y_figE = sinusoid(simtime, amp_figE, freq_figE)
 network_trained = train(network, simtime, 3, y_figE, plot_training=False)
-network_tested = test(network_trained, simtime, y_figE, title = 'E - Complicated periodic')
+network_tested = test(network_trained, simtime2, y_figE, title = 'E - Complicated periodic')
 
 
 amp_figF = amp_figD
 freq_figF = freq_figD
 y_figF = sinusoid(simtime, amp_figF, freq_figF, noise = True, noise_intensity = 0.5)
 network_trained = train(network, simtime, 3, y_figF, plot_training=False)
-network_tested = test(network_trained, simtime, y_figF, title = 'F - Extremely noisy target')
+network_tested = test(network_trained, simtime2, y_figF, title = 'F - Extremely noisy target')
 
 
 amp_figG = 1
 freq_figG = 2/60
 y_figG = square(simtime, amp_figG, freq_figG, noise = True, noise_intensity=0.01)
 network_trained = train(network, simtime, 3, y_figG, plot_training=False)
-network_tested = test(network_trained, simtime, y_figG, title = 'G - Discontinuous target')
+network_tested = test(network_trained, simtime2, y_figG, title = 'G - Discontinuous target')
 
 
 x_figH, y_figH, z_figH = lorenz_attractor(simtime/10, 1, 1, 1, Rayleigh_number = 28, Prandtl_number = 10)
 network_trained = train(network, simtime, 3, y_figH[:-1]/10, plot_training=False)
-network_tested = test(network_trained, simtime, y_figH[:-1]/10, title = 'H - Lorenz attractor')
+network_tested = test(network_trained, simtime2, y_figH[:-1]/10, title = 'H - Lorenz attractor')
 
 
 amp_figI = [1]
 freq_figI1 = [1/0.06]
 y_figI1 = sinusoid(simtime, amp_figI, freq_figI1)
 network_trained = train(network, simtime, 3, y_figI1, plot_training=False)
-network_tested = test(network_trained, simtime, y_figI1, title = r'I - Sine wave w/ period 6 $\tau$')
+network_tested = test(network_trained, simtime2, y_figI1, title = r'I - Sine wave w/ period 6 $\tau$')
 
 
 freq_figI2 = [1/800/dt]
 y_figI2 = sinusoid(simtime, amp_figI, freq_figI2)
 network_trained = train(network, simtime, 3, y_figI2, plot_training=False)
-network_tested = test(network_trained, simtime, y_figI2, title = r'I - Sine wave w/ period 800 $\tau$')
+network_tested = test(network_trained, simtime2, y_figI2, title = r'I - Sine wave w/ period 800 $\tau$')
