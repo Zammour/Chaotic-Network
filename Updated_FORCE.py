@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.sparse as sparse
 from scipy import stats
-from functions import triangle, sinusoid
 
 
 def triangle(time, amplitude, freq, noise = False, noise_intensity = 0.1):
@@ -67,7 +66,7 @@ def lorenz_attractor(time, x_0, y_0, z_0, Prandtl_number = 10, Rayleigh_number =
         y.append(y[-1] + yp)
         z.append(z[-1] + zp)
         
-    return x, y, z 
+    return np.array(x), np.array(y), np.array(z) 
 
 def create_network(N = 1000, g = 1.5, alpha = 1, p = 0.1, neurons_recorded = 10):
     
@@ -136,7 +135,6 @@ def train(network, time, learn_every, ft, plot_training = False):
             
         if plot_training:
             if ti%(nsecs/2) == 0:
-            	print('time: ' + str(t) +'.');
             	plt.subplot(211);
             	plt.plot(simtime, ft.T, linewidth = 3, color = 'green');
             	plt.plot(simtime, network.history_z.T, linewidth = 3, color = 'red');
@@ -159,7 +157,7 @@ def train(network, time, learn_every, ft, plot_training = False):
                     
                 
                 # sim, so x(t) and r(t) are created.
-        network.x = (1.0-dt)*network.x + network.J_GG*(network.r*dt) + network.J_GF*(network.z*dt); # note the y here.
+        network.x = (1.0-dt)*network.x + network.J_GG*(network.r*dt) #+ network.J_GF*(network.z*dt); # note the y here.
         network.r = np.tanh(network.x);
         rz = network.r[network.zidxs]   		# the neurons that project to the output
         #ry = network.r[network.yidxs]			# the neurons that project to the control unit
@@ -206,7 +204,7 @@ def train(network, time, learn_every, ft, plot_training = False):
     plt.legend(['f', 'z']);
     return network    
 
-def test(network, time, ft, plot_test = True):
+def test(network, time, ft, plot_test = True, title = None):
     network.history_wo = np.repeat(np.sqrt(np.dot(network.wo.T, network.wo)), len(time))
     network.history_z = np.zeros((1, len(time)))
     #network.history_y = np.zeros((1, len(time)))
@@ -223,7 +221,7 @@ def test(network, time, ft, plot_test = True):
     for t in simtime:				# don't want to subtract time in indices
         
         # sim, so x(t) and r(t) are created.
-        network.x = (1.0-dt)*network.x + network.J_GG*(network.r*dt) + network.J_GF*(network.z*dt); # note the y here.
+        network.x = (1.0-dt)*network.x + network.J_GG*(network.r*dt) #+ network.J_GF*(network.z*dt); # note the y here.
         
     
         network.r = np.tanh(network.x);
@@ -242,6 +240,7 @@ def test(network, time, ft, plot_test = True):
     
     if plot_test:
         
+        if title != None: plt.suptitle(title, fontweight='bold')
         plt.figure()
         plt.plot(simtime, ft.T, linewidth = 3, color = 'green');
         #plt.plot(simtime, network.history_y.T, linewidth = 3, color = 'magenta'); 
@@ -257,8 +256,10 @@ def test(network, time, ft, plot_test = True):
 
 def plot_activity(network, time, title = None):
     
+    if title != None: plt.suptitle(title, fontweight='bold')
+
     nrows = 2 + network.neurons.shape[0]
-    
+
     plt.figure()
     if title != None: plt.suptitle(title, fontweight='bold')
     plt.subplot(nrows, 1, 1)
@@ -333,7 +334,7 @@ network_tested = test(network_trained, simtime, y_figH[:-1]/10, title = 'H - Lor
 
 
 amp_figI = [1]
-freq_figI1 = [1/6/dt]
+freq_figI1 = [1/0.06]
 y_figI1 = sinusoid(simtime, amp_figI, freq_figI1)
 network_trained = train(network, simtime, 3, y_figI1, plot_training=False)
 network_tested = test(network_trained, simtime, y_figI1, title = r'I - Sine wave w/ period 6 $\tau$')
