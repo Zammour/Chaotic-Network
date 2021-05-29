@@ -1,4 +1,3 @@
-
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -112,9 +111,17 @@ ft = ft/1.5;
 ft2 = (amp/1.0)*np.sin(1.0*np.pi*freq*simtime2) + (amp/2.0)*np.sin(2.0*np.pi*freq*simtime2) + (amp/6.0)*np.sin(3.0*np.pi*freq*simtime2) + (amp/3.0)*np.sin(4.0*np.pi*freq*simtime2);
 ft2 = ft2/1.5;
 
-ft = triangle(simtime, amp, freq)
 #ft=y_figE;
 
+amp_figG = 1
+freq_figG = 2/60
+y_figG = square(simtime, amp_figG, freq_figG, noise = True, noise_intensity=0.01)
+
+
+amp_figE = np.array([1, 1/4, 1/3, 1/15, 1/5, -1/14, 1/10, 1/12, 1/3, 1/2.5, 1/6, 1/2, -1/5, 1/30, 1/4, -1/10])
+freq_figE = np.arange(1,17)/180
+y_figE = sinusoid(simtime, amp_figE, freq_figE)
+ft = y_figG
 
 wo_pre_len = np.zeros((1,simtime_len))  
 
